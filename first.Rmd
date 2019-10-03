@@ -13,6 +13,14 @@ library(caret)    # for machine learning algorithms
 
 
 ```{r}
+data<- read.csv("airbnb_joined.csv")
+
+set.seed(256)
+
+data<-data%>%
+  sample_n(5000)
+
+data
 
 ```
 
