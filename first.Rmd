@@ -15,14 +15,28 @@ library(caret)    # for machine learning algorithms
 ```{r}
 data<- read.csv("airbnb_joined.csv")
 
+```
+
+```{r}
 set.seed(256)
 
 data<-data%>%
   sample_n(5000)
 
 data
-hello i can push
-NIkethaaa
+
+data<- data %>% filter(price<1000)
+View(data)
 ```
 
+
+```{r}
+names(data)
+View(data)
+```
+
+```{r}
+data_small<- data%>% select(-c(id, is_location_exact, calendar_updated, latitude, longitude))
+sum(complete.cases(data_small))
+```
 
