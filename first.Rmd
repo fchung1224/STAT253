@@ -43,7 +43,6 @@ sum(complete.cases(data_small))
 ```{r}
 sum(complete.cases(data_small))
 colSums(is.na(data))
-<<<<<<< HEAD
 =======
 colSums(is.na(data_small))
 ```
@@ -69,14 +68,31 @@ data_complete <- predict(impute_info, newdata = data_small)
 ```{r}
 colSums(is.na(data_complete))
 sum(complete.cases(data_complete))
-=======
 ```
 
-```{r}
-data_small<- data%>% select(-c(id, is_location_exact, calendar_updated, latitude, longitude, square_feet))
-sum(complete.cases(data_small))
->>>>>>> parent of 26564a8... push
-```
+##Part 2: Analyze
+##Narrowing down predictors:LASSO
+    ```{r}
+    # Define a range of lambda tuning parameters to try
+    lambda_grid <- 10^seq(-3, 0.5, length = 100)
+
+    # Set the seed
+    set.seed(253)
+
+    # Perform LASSO
+    lasso_model_data <- train(
+      price~.,
+      data = data_complete,
+      method = "glmnet",
+      trControl = trainControl(method = "cv", number = 10, selectionFunction = "best"),
+      tuneGrid = data.frame(alpha=1, lambda=lambda_grid),
+      metric = "MAE",
+      na.action = na.omit
+    )
+    ```
+
+
+
 
 
 
