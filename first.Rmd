@@ -34,17 +34,17 @@ View(data)
 names(data)
 View(data)
 ```
-
+```{r}
+data_small<- data%>% select(-c(id, is_location_exact, calendar_updated, latitude, longitude, square_feet))
+sum(complete.cases(data_small))
+```
 
 ```{r}
 sum(complete.cases(data_small))
 colSums(is.na(data))
 ```
 
-```{r}
-data_small<- data%>% select(-c(id, is_location_exact, calendar_updated, latitude, longitude, square_feet))
-sum(complete.cases(data_small))
-```
+
 
 
 
