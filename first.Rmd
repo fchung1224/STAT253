@@ -181,9 +181,11 @@ lasso_model_data$bestTune
 
 data_final %>%
   ggplot(aes(x = bathrooms, y = price))+
-  geom_boxplot()+
+  geom_col()+
   facet_grid(~guests_included)
 ```
+
+As we can see in this graph, we wanted to see what the relationship between price of the airbnb and the number of bathrooms were, and by controlling for the number of 
 
 
 
