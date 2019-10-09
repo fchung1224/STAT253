@@ -185,7 +185,6 @@ data_final %>%
   facet_grid(~guests_included)
 ```
 
-As we can see in this graph, we wanted to see what the relationship between price of the airbnb and the number of bathrooms were, and by controlling for the number of 
 
 
 
