@@ -9,8 +9,12 @@ output: html_document
 library(ggplot2)  # for plots
 library(dplyr)    # for wrangling
 library(caret)    # for machine learning algorithms
+<<<<<<< HEAD
 library(tidyr)    # because
 library(naniar)   # we need it 
+=======
+
+>>>>>>> d806aa4a5d9c75fdc8229541016ca382eae231e3
 ```
 
 
@@ -34,8 +38,14 @@ data<- data %>% filter(price<1000)
 
 ```{r}
 names(data)
+<<<<<<< HEAD
 na_strings <- c("NA", "N A", "N / A", "N/A", "N/ A", "Not Available", "NOt available")
 
+=======
+library(dplyr)
+na_strings <- c("NA", "N A", "N / A", "N/A", "N/ A", "Not Available", "NOt available")
+library(naniar)
+>>>>>>> d806aa4a5d9c75fdc8229541016ca382eae231e3
 data<-data%>%
   replace_with_na_all(condition = ~.x %in% na_strings)
 data <- data %>%
@@ -51,10 +61,36 @@ data_small<- data%>% select(-c(id, is_location_exact, calendar_updated, latitude
 sum(complete.cases(data_small))
 
 colSums(is.na(data))
+<<<<<<< HEAD
 
+=======
+>>>>>>> d806aa4a5d9c75fdc8229541016ca382eae231e3
 ```
 
 ```{r}
+data_small<- data%>% select(-c(id, is_location_exact, calendar_updated, latitude, longitude, square_feet))
+sum(complete.cases(data_small))
+
+colSums(is.na(data))
+
+<<<<<<< HEAD
+colSums(is.na(data_small))
+
+=======
+>>>>>>> d806aa4a5d9c75fdc8229541016ca382eae231e3
+```
+
+
+```{r}
+<<<<<<< HEAD
+colSums(is.na(data))
+
+
+data_small<- data%>% select(-c(X,id, is_location_exact, calendar_updated, latitude, longitude, square_feet))
+
+```
+
+=======
 data_small<- data%>% select(-c(id, is_location_exact, calendar_updated, latitude, longitude, square_feet))
 sum(complete.cases(data_small))
 
@@ -72,6 +108,7 @@ colSums(is.na(data))
 data_small<- data%>% select(-c(X,id, is_location_exact, calendar_updated, latitude, longitude, square_feet))
 
 ```
+>>>>>>> d806aa4a5d9c75fdc8229541016ca382eae231e3
 
 
 
@@ -119,12 +156,20 @@ sum(complete.cases(data_complete))
     plot(lasso_model_data)
     
     ```   
+<<<<<<< HEAD
 ```{r}
 # Identify which tuning parameter (ie. lambda) is "best" 
 lasso_model_data$bestTune
 ```   
 
 
+=======
+    ```{r}
+        # Identify which tuning parameter (ie. lambda) is "best" 
+        lasso_model_data$bestTune
+    
+```    
+>>>>>>> d806aa4a5d9c75fdc8229541016ca382eae231e3
 ```{r }
 lasso_model_data$resample%>%
   summarize(mean(MAE))
@@ -137,5 +182,6 @@ lasso_model_data$results
 ```
 
 
-
-
+```{r}
+lasso_model_data$results
+```
