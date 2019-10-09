@@ -37,6 +37,7 @@ library(dplyr)    # for wrangling
 library(caret)    # for machine learning algorithms
 library(tidyr)    # because
 library(naniar)   # we need it 
+library(RANN)
 ```
 
 
@@ -130,6 +131,7 @@ Now we have 0 NAs!
       metric = "MAE",
       na.action = na.omit
     )
+    
 ```
     
 ```{r}
@@ -174,10 +176,20 @@ lasso_model_data$bestTune
 
 # make some graphs relating price to different variables
 
+```{r}
+# price relationship with number of bathrooms
+
+data_final %>%
+  ggplot(aes(x = bathrooms, y = price))+
+  geom_boxplot()+
+  facet_grid(~guests_included)
+```
 
 
 
 ```{r}
+glimpse(data_final)
+
 data_final %>%
   ggplot(aes(x = host_response_rate, y=reviews_per_month)) + geom_point()
 ```
