@@ -9,6 +9,7 @@ output: html_document
 library(ggplot2)  # for plots
 library(dplyr)    # for wrangling
 library(caret)    # for machine learning algorithms
+
 ```
 
 
@@ -26,36 +27,63 @@ data<-data%>%
 data
 
 data<- data %>% filter(price<1000)
-View(data)
+
 ```
 
 
 ```{r}
 names(data)
-View(data)
+library(dplyr)
+na_strings <- c("NA", "N A", "N / A", "N/A", "N/ A", "Not Available", "NOt available")
+library(naniar)
+data<-data%>%
+  replace_with_na_all(condition = ~.x %in% na_strings)
+data <- data %>%
+  mutate(bathrooms2 = replace_na(bathrooms, mean(bathrooms, na.rm = TRUE)))%>%
+  mutate(beds2 = replace_na(beds, mean(beds, na.rm = TRUE)))%>%
+  mutate(reviews2 = replace_na(reviews_per_month, mean(reviews_per_month, na.rm = TRUE)))%>%
+  mutate(host_response_rate2 = replace_na(host_response_rate, mean(host_response_rate, na.rm = TRUE)))
 ```
 
 
+<<<<<<< HEAD
+=======
 ```{r}
 sum(complete.cases(data_small))
+<<<<<<< HEAD
+<<<<<<< HEAD
+=======
+colSums(is.na(data))
+>>>>>>> parent of c75db80... Update first.Rmd
+```
+
+```{r}
+data_small<- data%>% select(-c(id, is_location_exact, calendar_updated, latitude, longitude, square_feet))
+sum(complete.cases(data_small))
+<<<<<<< HEAD
+colSums(is.na(data))
+=======
 colSums(is.na(data_small))
+=======
+>>>>>>> parent of c75db80... Update first.Rmd
 ```
+>>>>>>> 9916fe9604f8a0b7e901e4bc1c5a872e45ec8b2c
 
 ```{r}
+colSums(is.na(data))
+
+
 data_small<- data%>% select(-c(X,id, is_location_exact, calendar_updated, latitude, longitude, square_feet))
-data_small$host_response_time[data_small$host_response_time == "N/A"] <- " "
 
 ```
 
-```{r}
-data_small$host_response_rate[data_small$host_response_time == "N/A"] <- " "
-```
 
 
 ```{r}
 impute_info <- data_small %>%
   preProcess(method = "knnImpute")
 data_complete <- predict(impute_info, newdata = data_small) 
+>>>>>>> 26564a8263cbd66dcd6f4a5c04e8cbe989cb7746
 ```
 
 ```{r}
@@ -83,10 +111,32 @@ sum(complete.cases(data_complete))
       na.action = na.omit
     )
     ```
+    
+    ```{r}
+    # Plot coefficients for each LASSO
+    plot(lasso_model_data$finalModel, xvar = "lambda", label = TRUE, col = rainbow(20))
+    # Codebook for which variables the numbers correspond to
+    rownames(lasso_model_data$finalModel$beta)
+    ```   
+    ```{r}
+    # Plot metrics for each LASSO model
+    plot(lasso_model_data)
+    
+    ```   
+    ```{r}
+        # Identify which tuning parameter (ie. lambda) is "best" 
+        lasso_model_data$bestTune
+    
+```    
+```{r }
+lasso_model_data$resample%>%
+  summarize(mean(MAE))
+```
 
 
 
 
 
-
-
+```{r}
+lasso_model_data$results
+```
