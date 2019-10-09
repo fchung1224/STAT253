@@ -4,6 +4,32 @@ author: "Federico Chung, KY, Niketh Gamage, Josh Upadhyay"
 date: "10/3/2019"
 output: html_document
 ---
+---
+title: "Mini-Project 1"
+author: "Federico Chung, KY, Niketh Gamage, Josh Upadhyay"
+output: 
+  html_document:
+    toc: true
+    toc_float: true
+---
+
+
+
+
+\
+\
+
+
+
+## Part 1: Ready the data
+
+
+\
+\
+\
+\
+\
+\
 
 ```{r setup, include=FALSE}
 library(ggplot2)  # for plots
@@ -13,12 +39,14 @@ library(tidyr)    # because
 library(naniar)   # we need it 
 ```
 
-## Part 1: Ready the data
+
 ```{r}
 data<- read.csv("airbnb_joined.csv")
 
 ```
 
+
+**Sampling the data**
 ```{r}
 set.seed(256)
 
@@ -30,6 +58,13 @@ data
 data<- data %>% filter(price<1000)
 
 ```
+
+**Possible irrelevant variables**
+```{r}
+colnames(data)
+```
+
+Based on the names of the variables, we believe id, X, and host_response_rate2 are probably the least important variables. We also notice multiple variables with seemingly similar (correlated) information, like host response rate, bathrooms, and reviews, which all have a second variable. We'd probably remove the second variable as it likely doesn't add too much new information. 
 
 
 ```{r}
@@ -46,17 +81,14 @@ data <- data %>%
 ```
 
 
+Using the colSums function, we determined which variables had many NAs (in which case we removed, like square_feet), or could be salvaged by computing their mean. We also removed a few additional variables we deemed unimportant (lat/longitude).
+
 ```{r}
+
+
 data_small<- data%>% select(-c(id, is_location_exact, calendar_updated, latitude, longitude, square_feet))
 sum(complete.cases(data_small))
 
-colSums(is.na(data))
-
-```
-
-```{r}
-data_small<- data%>% select(-c(id, is_location_exact, calendar_updated, latitude, longitude, square_feet))
-sum(complete.cases(data_small))
 
 colSums(is.na(data))
 
@@ -65,17 +97,7 @@ colSums(is.na(data_small))
 ```
 
 
-```{r}
-colSums(is.na(data))
-
-
-data_small<- data%>% select(-c(X,id, is_location_exact, calendar_updated, latitude, longitude, square_feet))
-
-colSums(is.na(data_small))
-```
-
-
-
+We then ran knnImpute on the remaining variables. 
 ```{r}
 impute_info <- data_small %>%
   preProcess(method = "knnImpute")
@@ -88,9 +110,10 @@ colSums(is.na(data_complete))
 sum(complete.cases(data_complete))
 ```
 
-##Part 2: Analyze
-##Narrowing down predictors:LASSO
-    ```{r}
+Now we have 0 NAs!
+
+#Narrowing Down the Predictors using LASSO: 
+```{r}
     # Define a range of lambda tuning parameters to try
     lambda_grid <- 10^seq(-3, 0.5, length = 100)
 
@@ -107,38 +130,133 @@ sum(complete.cases(data_complete))
       metric = "MAE",
       na.action = na.omit
     )
-    ```
+```
     
-    ```{r}
+```{r}
     # Plot coefficients for each LASSO
-    plot(lasso_model_data$finalModel, xvar = "lambda", label = TRUE, col = rainbow(20))
+plot(lasso_model_data$finalModel, xvar = "lambda", label = TRUE, col = rainbow(20))
     # Codebook for which variables the numbers correspond to
-    rownames(lasso_model_data$finalModel$beta)
-    ```   
-    ```{r}
-    # Plot metrics for each LASSO model
-    plot(lasso_model_data)
+final_variables <- rownames(lasso_model_data$finalModel$beta)
+
+
+
+``` 
+
+
+**Based on the results of LASSO, we reduced our 'small' dataset even further into 20 final variables. We believe this dimensionality reduction was necessary to reduce computing power, and also remove unnecessary or correlated variables (notice how reviews has been removed, but reviews2 is still present). 
+
+
+**added price back into the dataset, as it's what we're trying to predict!**
+```{r}
+data_final <- data_small%>%
+  select(c(final_variables, price))
+
+
+```
+
     
-    ```   
 ```{r}
 # Identify which tuning parameter (ie. lambda) is "best" 
 lasso_model_data$bestTune
-```   
+``` 
+
+## Part 2: Analyze
 
 
-```{r }
-lasso_model_data$resample%>%
-  summarize(mean(MAE))
-```
+\
+\
+\
+\
+\
+\
+
+
+
+# make some graphs relating price to different variables
+
 
 
 
 ```{r}
-lasso_model_data$results
+data_final %>%
+  ggplot(aes(x = host_response_rate, y=reviews_per_month)) + geom_point()
 ```
+Interestingly, there's no relationship between host response rate and number of reviews per month. We're not suprised to see a spike in reviews on nonresponsive and highly responsive hosts, though, as people may leave many negative reviews on bad hosts (almost 0 response rate) or very positive responses for great hosts. 
+
+
+```{r}
+data_final%>%
+  group_by(property_type) %>%
+  summarize(mean_reviews = mean(reviews2))%>%
+  ggplot(aes(property_type, mean_reviews)) + geom_bar(stat = 'identity') + 
+  theme_minimal() + labs(title = "Are Some Property Types More Valued Than Others?",
+                         x = "Property Type", y = "mean(Reviews)")
+  
+```
+
+```{r}
+data_final %>%
+  group_by(property_type)%>%
+  summarize(tot = n()) %>%
+  arrange(desc(tot))%>%
+  head(5)
+```
+Clearly there's also an imbalance in the number of listings per property type, but it's interesting that 1 is rated so low on average even though it's the highest!
+
+
+#Model Making:
+
+Based on the visualizations above, it's quite clear that there are nonlinear trends that exist in our data. As this is a regression task as well, we decided to go with GAM, as it's flexible, and makes no assumptions about the relationships in our data. 
+
+```{r, warning=FALSE, cache=TRUE}
+set.seed(253)
+    # Run the GAM
+    gam_model <- train(
+      price ~.,
+      data = data_final,
+      method = "gamLoess",
+      tuneGrid = data.frame(span = seq(0.1, 1, length = 10), degree = 1),
+      trControl = trainControl(method = "cv", number = 10, selectionFunction = "best"),
+      metric = "MAE",
+      na.action = na.omit
+    )
+```
+
+
+
+**okay then we need to evaluate this / comment**
+    ```{r}
+    # Plot CV MAE under different spans
+    plot(gam_model)
+    
+    # ID best span parameter
+    gam_model$bestTune
+    
+    # Calculate the CV MAE of the best model
+    gam_model$results %>% 
+      filter(span == gam_model$bestTune$span)
+    gam_model$resample %>% 
+      summarize(mean(MAE))
+    ```
+
 
 
 
 ## Part 3: Summarize
 
+
+
+
+\
+\
+\
+\
+\
+\
+
+
+
 ## Part 4: Contributions
+
+
+
