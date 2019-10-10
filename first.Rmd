@@ -80,6 +80,8 @@ na_strings <- c("NA", "N A", "N / A", "N/A", "N/ A", "Not Available", "NOt avail
 
 data<-data%>%
   replace_with_na_all(condition = ~.x %in% na_strings)
+
+
 data <- data %>%
   mutate(bathrooms2 = replace_na(bathrooms, mean(bathrooms, na.rm = TRUE)))%>%
   mutate(beds2 = replace_na(beds, mean(beds, na.rm = TRUE)))%>%
@@ -105,10 +107,13 @@ colSums(is.na(data_small))
 
 We then ran knnImpute on the remaining variables. 
 ```{r}
+data_small<- data_small%>%
+  select(-c(price))
+
 impute_info <- data_small %>%
   preProcess(method = "knnImpute")
-data_complete <- predict(impute_info, newdata = data_small) 
 
+data_complete <- predict(impute_info, newdata = data_small) 
 
 ```
 
@@ -144,7 +149,6 @@ Now we have 0 NAs!
     # Plot coefficients for each LASSO
 plot(lasso_model_data$finalModel, xvar = "lambda", label = TRUE, col = rainbow(20))
     # Codebook for which variables the numbers correspond to
-final_variables <- rownames(lasso_model_data$finalModel$beta)
 
 coef(lasso_model_data$finalModel, lasso_model_data$bestTune$lambda)
 
@@ -157,7 +161,10 @@ final_variables<- c("host_response_time","neighbourhood_cleansed","room_type","a
 
 **added price back into the dataset, as it's what we're trying to predict!**
 ```{r}
-data_final <- data_small%>%
+data_new<-data_complete%>%
+  mutate(price = data$price)
+
+data_final <- data_new%>%
   select(c(final_variables, price))
 
 ```
@@ -187,7 +194,7 @@ lasso_model_data$bestTune
 glimpse(data_final)
 
 data_final %>%
-  ggplot(aes(x = host_response_rate, y=reviews_per_month)) + geom_point()
+  ggplot(aes(x = host_response_time, y=reviews_per_month)) + geom_point()
 ```
 Interestingly, there's no relationship between host response rate and number of reviews per month. We're not suprised to see a spike in reviews on nonresponsive and highly responsive hosts, though, as people may leave many negative reviews on bad hosts (almost 0 response rate) or very positive responses for great hosts. 
 
@@ -225,6 +232,8 @@ data_final%>%
   theme_minimal() + 
   labs(title = "Bathrooms vs Price?",x = "Number of Bathrooms", y = "Price") + 
   geom_smooth(method = 'lm')
+
+
 ```
 Maybe geom_smooth() is a little unecessary here, but it's intuitive that the relationship between the number of bathrooms and the price isn't necessarily linear - a 1 bathroom overlooking the Hudson river is going to be much more expensive than a 2 bathroom place in Queens or Brooklyn. While there's an arguement to be made that this could still be modelled by a polynomial function, but again, GAM places no assumptions on the shape of the data unlike parametric models.
 
@@ -244,6 +253,8 @@ set.seed(253)
       metric = "MAE",
       na.action = na.omit
     )
+    
+  
 ```
 
     ```{r}
@@ -267,6 +278,31 @@ As we can see in this graph our CV MAE for our model drops significantly at 0.25
 
 
 ```{r}
+set.seed(253)
+    least_squares <- train(
+      price ~.,
+      data = data_final,
+      method = "lm",
+      trControl = trainControl(method = "cv", number = 10, selectionFunction = "best"),
+      metric = "MAE",
+      na.action = na.omit
+    )
+
+    
+mean(least_squares$resample$MAE)
+least_squares$resample
+
+mean(least_squares$resample$Rsquared)
+
+
+```
+
+```{r}
+mean(gam_model$resample$Rsquared)
+```
+
+
+```{r}
     # Put the 11 plots in a 4x3 grid
     par(mfrow = c(4,3))
     
@@ -275,11 +311,14 @@ As we can see in this graph our CV MAE for our model drops significantly at 0.25
 ```
 
 
-As mentioned before, we had strong intuition that the relationship between price and some of the variables was non-parametric. Looking at host_response_rate2 or property_type, for example, we can see the weird kinks in the shape of the model that indicate our decision to go with a nonparametric model was a correct one. Other relationships, like accomodates vs price, do seem to be linear (parametric), however. 
+Using GAM, we can see a mix of relationships between price and variables. Variables like minimum_nights appear to have a linear (and thus, parametric) relationship with price, while number_of_reviews appears to have a non-parametric, or highly polynomial relationship with price, all else held constant. Clearly, based on least squares, most variables must have a parametric relationship, or else least squares would not have preformed so similarity to GAM. 
 
 
-*What did we try*
-We first ran KNNImpute on all the variables that had missing NAs, but quickly realized this was not a good plan of action, given taking the mean of certain variables did not make sense. E.g, taking the mean for a categorical encoded variable makes no sense. Therefore to fill the NA's we put the most frequent value for the categorical variables, and for the quantitative variables in our data set we chose the ones that had fewer NA's. 
+
+
+
+
+
 
 ## Part 3: Summarize
 
@@ -291,6 +330,29 @@ We first ran KNNImpute on all the variables that had missing NAs, but quickly re
 \
 \
 \
+
+**Well!**
+
+Despite our intution that we should use GAM due to nonparametric relationships between Price and various variables in the dataset, the mean MAE of both GAM and least squares are very similar. Least squares has a slightly higher mean R^2 value, while GAM has a slightly lower mean MAE value than least squares. This indicates that GAM is definetly more flexible, and thus produces predictions with higher accuracy, but somehow fails to account for the same or more variation in price.
+
+As a result, if we are looking to make predictions on price, we'd reccomend GAM. If we are looking to simply explain the variation within the data, we reccomend using least squares. However, if model interpretability and complexity are concerns, we'd reccomend simply going with the least squares model over the GAM. 
+
+```{r}
+rbind(mean(gam_model$resample$Rsquared),mean(least_squares$resample$Rsquared)) 
+```
+
+```{r}
+rbind(mean(gam_model$resample$MAE),mean(least_squares$resample$MAE)) 
+```
+
+**probably delete this***
+As mentioned before, we had strong intuition that the relationship between price and some of the variables was non-parametric. Looking at host_response_rate2 or property_type, for example, we can see the weird kinks in the shape of the model that indicate our decision to go with a nonparametric model was a correct one. However, the similarity of the least squares and GAM model indicates to us that all the variables have a parametric relationship with price, when all other variables are held constant.  
+
+
+
+**but not this**
+*What did we try?*
+We first ran KNNImpute on all the variables that had missing NAs, but quickly realized this was not a good plan of action, given taking the mean of certain variables did not make sense. E.g, taking the mean for a categorical encoded variable makes no sense. Therefore to fill the NA's we put the most frequent value for the categorical variables, and for the quantitative variables in our data set we chose the ones that had fewer NA's. We then ran GAM on the variables we selected using LASSO, but playing devil's advocate, we decided to try least squares to see what we would get. Interestingly, the least squares model preformed much better than we expected, as shown above. 
 
 
 
