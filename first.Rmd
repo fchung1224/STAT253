@@ -217,6 +217,23 @@ data_final %>%
 Clearly there's also an imbalance in the number of listings per property type, but it's interesting that 1 is rated so low on average even though it's the highest!
 
 
+```{r}
+data_final %>%
+  ggplot(aes(accommodates, price)) + geom_point() + labs(title = "Number of People a Listing Accomodates vs Price") + geom_smooth()
+```
+
+When plotting price vs accomodates, we see a weak positive correlation, until about the 12th person. The data points for 16+ person listings show a lower price, which may be indicative of large houses outside NYC (cheaper areas). Regardless, this relationship between accomodates and price indicates a nonlinear relationship, which justifies our choice of using GAM compared to other parametric methods.
+
+```{r}
+data_final%>%
+  ggplot(aes(bathrooms, price)) + geom_point(stat = 'identity') + 
+  theme_minimal() + 
+  labs(title = "Bathrooms vs Price?",x = "Number of Bathrooms", y = "Price") + 
+  geom_smooth(method = 'lm')
+```
+Maybe geom_smooth() is a little unecessary here, but it's intuitive that the relationship between the number of bathrooms and the price isn't necessarily linear - a 1 bathroom overlooking the Hudson river is going to be much more expensive than a 2 bathroom place in Queens or Brooklyn. While there's an arguement to be made that this could still be modelled by a polynomial function, but again, GAM places no assumptions on the shape of the data unlike parametric models.
+
+
 #Model Making:
 
 Based on the visualizations above, it's quite clear that there are nonlinear trends that exist in our data. As this is a regression task as well, we decided to go with GAM, as it's flexible, and makes no assumptions about the relationships in our data. 
@@ -251,9 +268,23 @@ set.seed(253)
     gam_model$resample %>% 
       summarize(mean(MAE))
     ```
+As we can see in this graph our best span for the GAM model is around 0.3
 
 
+```{r}
+    # Put the 11 plots in a 4x3 grid
+    par(mfrow = c(4,3))
+    
+    # Make plots
+    plot(gam_model$finalModel)
+```
 
+
+As mentioned before, we had strong intuition that the relationship between price and some of the variables was non-parametric. Looking at host_response_rate2 or property_type, for example, we can see the weird kinks in the shape of the model that indicate our decision to go with a nonparametric model was a correct one. Other relationships, like accomodates vs price, do seem to be linear (parametric), however. 
+
+
+*What did we try*
+We first ran KNNImpute on all the variables that had missing NAs, but quickly realized this was not a good plan of action, given taking the mean of certain variables did not make sense. E.g, taking the mean for a categorical endocded variable makes no sense.
 
 ## Part 3: Summarize
 
