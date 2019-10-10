@@ -46,6 +46,12 @@ data<- read.csv("airbnb_joined.csv")
 
 ```
 
+```{r}
+data<-data%>%
+  select(-c(X))
+```
+
+
 
 **Sampling the data**
 ```{r}
@@ -85,7 +91,6 @@ data <- data %>%
 Using the colSums function, we determined which variables had many NAs (in which case we removed, like square_feet), or could be salvaged by computing their mean. We also removed a few additional variables we deemed unimportant (lat/longitude).
 
 ```{r}
-
 
 data_small<- data%>% select(-c(id, is_location_exact, calendar_updated, latitude, longitude, square_feet))
 sum(complete.cases(data_small))
@@ -141,8 +146,9 @@ plot(lasso_model_data$finalModel, xvar = "lambda", label = TRUE, col = rainbow(2
     # Codebook for which variables the numbers correspond to
 final_variables <- rownames(lasso_model_data$finalModel$beta)
 
+coef(lasso_model_data$finalModel, lasso_model_data$bestTune$lambda)
 
-
+final_variables<- c("host_response_time","neighbourhood_cleansed","room_type","accommodates","bathrooms","bedrooms","amenities","minimum_nights","maximum_nights","availability_30","number_of_reviews","review_scores_rating","is_business_travel_ready","reviews_per_month","neighbourhood_group" )
 ``` 
 
 
@@ -154,7 +160,6 @@ final_variables <- rownames(lasso_model_data$finalModel$beta)
 data_final <- data_small%>%
   select(c(final_variables, price))
 
-sd(data_final$price, na.rm = FALSE)
 ```
 
     
