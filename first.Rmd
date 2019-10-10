@@ -104,6 +104,7 @@ impute_info <- data_small %>%
   preProcess(method = "knnImpute")
 data_complete <- predict(impute_info, newdata = data_small) 
 
+
 ```
 
 ```{r}
@@ -153,7 +154,7 @@ final_variables <- rownames(lasso_model_data$finalModel$beta)
 data_final <- data_small%>%
   select(c(final_variables, price))
 
-
+sd(data_final$price, na.rm = FALSE)
 ```
 
     
@@ -175,17 +176,6 @@ lasso_model_data$bestTune
 
 
 # make some graphs relating price to different variables
-
-```{r}
-# price relationship with number of bathrooms
-
-data_final %>%
-  ggplot(aes(x = bathrooms, y = price))+
-  geom_col()+
-  facet_grid(~guests_included)
-```
-
-
 
 
 ```{r}
@@ -233,7 +223,6 @@ data_final%>%
 ```
 Maybe geom_smooth() is a little unecessary here, but it's intuitive that the relationship between the number of bathrooms and the price isn't necessarily linear - a 1 bathroom overlooking the Hudson river is going to be much more expensive than a 2 bathroom place in Queens or Brooklyn. While there's an arguement to be made that this could still be modelled by a polynomial function, but again, GAM places no assumptions on the shape of the data unlike parametric models.
 
-
 #Model Making:
 
 Based on the visualizations above, it's quite clear that there are nonlinear trends that exist in our data. As this is a regression task as well, we decided to go with GAM, as it's flexible, and makes no assumptions about the relationships in our data. 
@@ -252,12 +241,11 @@ set.seed(253)
     )
 ```
 
-
-
-**okay then we need to evaluate this / comment**
     ```{r}
     # Plot CV MAE under different spans
+    
     plot(gam_model)
+    plot(gam_model, ylim=c(0,100))
     
     # ID best span parameter
     gam_model$bestTune
@@ -267,8 +255,10 @@ set.seed(253)
       filter(span == gam_model$bestTune$span)
     gam_model$resample %>% 
       summarize(mean(MAE))
+    gam_model$resample %>%
+      summarize(mean(Rsquared))
     ```
-As we can see in this graph our best span for the GAM model is around 0.3
+As we can see in this graph our CV MAE for our model drops significantly at 0.25 span, and it remains close to a similar MAE value after the span is 0.5 and onwards. But the variation of CV MAE accross the model is very high. And due to the variation in CV being so significant we decided to use "best" selection function to calculate our span value of 0.6. 
 
 
 ```{r}
@@ -284,10 +274,9 @@ As mentioned before, we had strong intuition that the relationship between price
 
 
 *What did we try*
-We first ran KNNImpute on all the variables that had missing NAs, but quickly realized this was not a good plan of action, given taking the mean of certain variables did not make sense. E.g, taking the mean for a categorical endocded variable makes no sense.
+We first ran KNNImpute on all the variables that had missing NAs, but quickly realized this was not a good plan of action, given taking the mean of certain variables did not make sense. E.g, taking the mean for a categorical encoded variable makes no sense. Therefore to fill the NA's we put the most frequent value for the categorical variables, and for the quantitative variables in our data set we chose the ones that had fewer NA's. 
 
 ## Part 3: Summarize
-
 
 
 
@@ -302,5 +291,8 @@ We first ran KNNImpute on all the variables that had missing NAs, but quickly re
 
 ## Part 4: Contributions
 
-
+Josh: Visualizations and GAM
+KY: LASSO
+Niketh: Summary
+Fed: Helped clean up data and fix NA's
 
